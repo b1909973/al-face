@@ -1,0 +1,408 @@
+
+<h2 class="sr-only">Hệ thống nhận diện gương mặt AI - phát hiện và nhận dạng người dựa trên dữ liệu đã đăng ký</h2>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+#app{padding:1rem 0;font-family:var(--font-sans)}
+.tabs{display:flex;gap:8px;margin-bottom:1.25rem;border-bottom:0.5px solid var(--color-border-tertiary);padding-bottom:0}
+.tab{padding:8px 16px;border:none;background:none;font-size:14px;font-weight:500;cursor:pointer;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:var(--color-text-primary);border-bottom:2px solid #185FA5}
+.tab:hover:not(.active){color:var(--color-text-primary)}
+.section{display:none}.section.active{display:block}
+.video-wrap{position:relative;width:100%;background:#0a0a0f;border-radius:var(--border-radius-lg);overflow:hidden;border:0.5px solid var(--color-border-tertiary);height:340px;display:flex;align-items:center;justify-content:center}
+.video-wrap video,.video-wrap canvas{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain}
+.video-wrap canvas{pointer-events:none}
+.ph{color:#555;font-size:13px;text-align:center;z-index:1}
+.ph i{font-size:36px;display:block;margin-bottom:6px;color:#444}
+.row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.btn{padding:7px 14px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);font-size:13px;font-weight:500;cursor:pointer;background:var(--color-background-primary);color:var(--color-text-primary);display:inline-flex;align-items:center;gap:5px}
+.btn:hover{background:var(--color-background-secondary)}
+.btn.primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.btn.primary:hover{background:#0C447C}
+.btn.danger{background:#A32D2D;color:#fff;border-color:#A32D2D}
+.btn.danger:hover{background:#791F1F}
+.btn.success{background:#3B6D11;color:#fff;border-color:#3B6D11}
+.btn.success:hover{background:#27500A}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.status{font-size:12px;color:var(--color-text-secondary);margin-top:8px;display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:#888780;display:inline-block;flex-shrink:0}
+.dot.green{background:#639922}.dot.amber{background:#BA7517;animation:pulse 1.2s infinite}.dot.red{background:#E24B4A}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:12px}
+.sc{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.7rem 1rem}
+.sc .lbl{font-size:11px;color:var(--color-text-secondary);margin-bottom:2px}
+.sc .val{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.divider{height:0.5px;background:var(--color-border-tertiary);margin:1.25rem 0}
+.person-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
+.person-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:10px;text-align:center;position:relative}
+.person-card .avatar{width:60px;height:60px;border-radius:50%;object-fit:cover;border:1.5px solid var(--color-border-secondary);margin:0 auto 6px}
+.person-card .av-ph{width:60px;height:60px;border-radius:50%;background:var(--color-background-info);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500;color:var(--color-text-info);margin:0 auto 6px}
+.person-card .name{font-size:13px;font-weight:500;color:var(--color-text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.person-card .meta{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+.person-card .del{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--color-background-danger);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-danger);font-size:12px}
+.person-card .del:hover{background:#F7C1C1}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500}
+.badge.green{background:#EAF3DE;color:#27500A}
+.badge.amber{background:#FAEEDA;color:#633806}
+.badge.red{background:#FCEBEB;color:#791F1F}
+.enroll-box{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-top:12px}
+.enroll-box h3{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:10px}
+.form-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.form-row input[type=text]{flex:1;min-width:120px;padding:7px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px}
+.cap-preview{width:80px;height:80px;border-radius:var(--border-radius-md);object-fit:cover;border:0.5px solid var(--color-border-secondary)}
+.cap-slot{width:80px;height:80px;border-radius:var(--border-radius-md);border:1px dashed var(--color-border-secondary);display:flex;align-items:center;justify-content:center;color:var(--color-text-tertiary);font-size:11px;cursor:pointer;text-align:center}
+.samples-row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.tip{font-size:11px;color:var(--color-text-secondary);margin-top:4px}
+.log{margin-top:12px;max-height:120px;overflow-y:auto;font-size:12px;color:var(--color-text-secondary)}
+.log-entry{padding:3px 0;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;justify-content:space-between}
+</style>
+
+<div id="app">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('detect')"><i class="ti ti-camera" aria-hidden="true" style="font-size:14px;margin-right:4px"></i>Nhận diện</button>
+    <button class="tab" onclick="switchTab('enroll')"><i class="ti ti-users" aria-hidden="true" style="font-size:14px;margin-right:4px"></i>Quản lý người dùng <span id="personCount" style="font-size:11px;background:var(--color-background-secondary);padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
+  </div>
+
+  <div id="sec-detect" class="section active">
+    <div class="video-wrap" id="vWrap">
+      <div class="ph" id="ph"><i class="ti ti-camera-off" aria-hidden="true"></i>Bật webcam để nhận diện</div>
+      <video id="vid" autoplay muted playsinline style="display:none"></video>
+      <canvas id="cvs"></canvas>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="startBtn" onclick="startCam()"><i class="ti ti-camera" aria-hidden="true"></i>Bật webcam</button>
+      <button class="btn danger" id="stopBtn" onclick="stopCam()" disabled><i class="ti ti-camera-off" aria-hidden="true"></i>Tắt</button>
+      <label style="font-size:13px;color:var(--color-text-secondary);display:flex;align-items:center;gap:6px;margin-left:4px">
+        <input type="checkbox" id="showUnk" checked> Hiện "Không rõ"
+      </label>
+      <label style="font-size:13px;color:var(--color-text-secondary);display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="showAge" checked> Tuổi/cảm xúc
+      </label>
+    </div>
+    <div class="status"><span class="dot" id="camDot"></span><span id="camStatus">Chưa kết nối</span></div>
+    <div class="stats">
+      <div class="sc"><div class="lbl">Gương mặt</div><div class="val" id="sFaces">0</div></div>
+      <div class="sc"><div class="lbl">Nhận ra</div><div class="val" id="sKnown">0</div></div>
+      <div class="sc"><div class="lbl">FPS</div><div class="val" id="sFps">0</div></div>
+      <div class="sc"><div class="lbl">DB người dùng</div><div class="val" id="sDb">0</div></div>
+    </div>
+    <div class="log" id="logBox"></div>
+  </div>
+
+  <div id="sec-enroll" class="section">
+    <div class="enroll-box">
+      <h3><i class="ti ti-user-plus" aria-hidden="true" style="font-size:15px;margin-right:5px"></i>Thêm người mới</h3>
+      <div class="form-row">
+        <input type="text" id="nameInput" placeholder="Tên người..." maxlength="30">
+        <input type="text" id="roleInput" placeholder="Chức vụ / nhóm (tuỳ chọn)" maxlength="30">
+      </div>
+      <p class="tip">Chụp ít nhất 1 ảnh (3+ ảnh cho độ chính xác cao hơn). Mỗi ảnh phải rõ mặt.</p>
+      <div class="samples-row" id="samplesRow">
+        <div class="cap-slot" onclick="captureSample()" title="Chụp ảnh mẫu"><i class="ti ti-camera" aria-hidden="true" style="font-size:18px;display:block"></i>Chụp</div>
+      </div>
+      <div class="row">
+        <button class="btn primary" onclick="captureSample()"><i class="ti ti-camera" aria-hidden="true"></i>Chụp ảnh mẫu</button>
+        <button class="btn success" onclick="enrollPerson()"><i class="ti ti-check" aria-hidden="true"></i>Lưu người dùng</button>
+        <button class="btn" onclick="clearEnroll()"><i class="ti ti-x" aria-hidden="true"></i>Xoá</button>
+      </div>
+      <div class="status" style="margin-top:8px"><span class="dot" id="enrDot"></span><span id="enrStatus">Bật webcam để bắt đầu chụp mẫu</span></div>
+    </div>
+
+    <div class="divider"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:14px;font-weight:500;color:var(--color-text-primary)">Danh bạ đã đăng ký</span>
+      <button class="btn" onclick="clearAll()" style="font-size:12px"><i class="ti ti-trash" aria-hidden="true"></i>Xoá tất cả</button>
+    </div>
+    <div class="person-grid" id="personGrid"><p style="font-size:13px;color:var(--color-text-secondary);margin-top:10px">Chưa có người nào. Thêm người mới ở trên.</p></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.14/model';
+let modelsLoaded = false;
+let stream = null;
+let loop = null;
+let persons = [];
+let labeledDescriptors = [];
+let matcher = null;
+let frameCount = 0;
+let fpsTimer = null;
+let enrollSamples = [];
+let currentTab = 'detect';
+
+const DIST_THRESHOLD = 0.5;
+const EMOTIONS = {happy:'Vui',sad:'Buồn',angry:'Tức',surprised:'Ngạc nhiên',disgusted:'Ghê',fearful:'Sợ',neutral:'Bình thường'};
+
+async function loadModels() {
+  try {
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+      faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL),
+      faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+    ]);
+    modelsLoaded = true;
+    setEnrStatus('Sẵn sàng chụp mẫu', 'green');
+  } catch(e) {
+    setEnrStatus('Lỗi tải mô hình AI', 'red');
+  }
+}
+
+function switchTab(t) {
+  currentTab = t;
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('sec-' + t).classList.add('active');
+}
+
+async function startCam() {
+  if(!modelsLoaded) { alert('Mô hình đang tải, vui lòng chờ...'); return; }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } });
+    const vid = document.getElementById('vid');
+    vid.srcObject = stream;
+    vid.style.display = '';
+    document.getElementById('ph').style.display = 'none';
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('stopBtn').disabled = false;
+    setDot('camDot', 'amber'); document.getElementById('camStatus').textContent = 'Đang khởi động...';
+    vid.onloadedmetadata = () => {
+      const cvs = document.getElementById('cvs');
+      cvs.width = vid.videoWidth; cvs.height = vid.videoHeight;
+      setDot('camDot', 'green'); document.getElementById('camStatus').textContent = 'Đang nhận diện...';
+      fpsTimer = setInterval(() => { document.getElementById('sFps').textContent = frameCount; frameCount = 0; }, 1000);
+      detectLoop();
+    };
+  } catch(e) { alert('Không thể truy cập webcam.'); }
+}
+
+function stopCam() {
+  if(stream) { stream.getTracks().forEach(t=>t.stop()); stream = null; }
+  if(loop) { cancelAnimationFrame(loop); loop = null; }
+  clearInterval(fpsTimer);
+  const vid = document.getElementById('vid');
+  vid.srcObject = null; vid.style.display = 'none';
+  document.getElementById('cvs').getContext('2d').clearRect(0,0,9999,9999);
+  document.getElementById('ph').style.display = '';
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+  setDot('camDot', ''); document.getElementById('camStatus').textContent = 'Đã tắt';
+  document.getElementById('sFaces').textContent = '0';
+  document.getElementById('sFps').textContent = '0';
+  document.getElementById('sKnown').textContent = '0';
+}
+
+async function detectLoop() {
+  if(!stream) return;
+  const vid = document.getElementById('vid');
+  const cvs = document.getElementById('cvs');
+  const ctx = cvs.getContext('2d');
+  const detOpts = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
+  try {
+    const dets = await faceapi.detectAllFaces(vid, detOpts)
+      .withFaceLandmarks(true)
+      .withFaceDescriptors()
+      .withAgeAndGender()
+      .withFaceExpressions();
+    cvs.width = vid.videoWidth; cvs.height = vid.videoHeight;
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+    let known = 0;
+    dets.forEach(d => {
+      const box = d.detection.box;
+      let label = null, dist = 1;
+      if(matcher && d.descriptor) {
+        const match = matcher.findBestMatch(d.descriptor);
+        if(match.distance < DIST_THRESHOLD) { label = match.label; dist = match.distance; known++; }
+      }
+      const showUnk = document.getElementById('showUnk').checked;
+      if(!label && !showUnk) return;
+      drawFaceBox(ctx, box, d, label, dist, cvs.width);
+      if(label) addLog(label);
+    });
+    document.getElementById('sFaces').textContent = dets.length;
+    document.getElementById('sKnown').textContent = known;
+    frameCount++;
+  } catch(e) {}
+  loop = requestAnimationFrame(detectLoop);
+}
+
+function drawFaceBox(ctx, box, d, label, dist, W) {
+  const isKnown = !!label;
+  const color = isKnown ? '#1D9E75' : '#378ADD';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(1.5, W * 0.002);
+  ctx.strokeRect(box.x, box.y, box.width, box.height);
+  const lh = 20;
+  ctx.fillStyle = isKnown ? 'rgba(15,110,86,0.88)' : 'rgba(24,95,165,0.85)';
+  ctx.fillRect(box.x, box.y - lh, box.width, lh);
+  ctx.fillStyle = '#fff';
+  const fs = Math.max(10, Math.round(W * 0.017));
+  ctx.font = `500 ${fs}px sans-serif`;
+  let topLabel = isKnown ? `${label}  ${Math.round((1-dist)*100)}%` : 'Không rõ';
+  ctx.fillText(topLabel, box.x + 4, box.y - 5);
+  const showExtra = document.getElementById('showAge').checked;
+  if(showExtra) {
+    let sub = '';
+    if(d.age) sub += `${Math.round(d.age)}t `;
+    if(d.gender) sub += d.gender === 'male' ? '· Nam' : '· Nữ';
+    if(d.expressions) {
+      const top = Object.entries(d.expressions).sort((a,b)=>b[1]-a[1])[0];
+      if(top && top[1] > 0.35) sub += ` · ${EMOTIONS[top[0]]||top[0]}`;
+    }
+    if(sub) {
+      ctx.fillStyle = 'rgba(10,10,15,0.7)';
+      ctx.fillRect(box.x, box.y + box.height, box.width, 19);
+      ctx.fillStyle = '#ccc';
+      ctx.font = `400 ${Math.max(9, fs-2)}px sans-serif`;
+      ctx.fillText(sub.trim(), box.x + 4, box.y + box.height + 13);
+    }
+  }
+}
+
+let logEntries = [];
+function addLog(name) {
+  const now = new Date().toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const last = logEntries[0];
+  if(last && last.name === name && Date.now() - last.ts < 3000) return;
+  logEntries.unshift({ name, time: now, ts: Date.now() });
+  if(logEntries.length > 20) logEntries.pop();
+  const box = document.getElementById('logBox');
+  box.innerHTML = logEntries.slice(0,8).map(e =>
+    `<div class="log-entry"><span><i class="ti ti-user" aria-hidden="true" style="font-size:12px;margin-right:4px"></i>${e.name}</span><span>${e.time}</span></div>`
+  ).join('');
+}
+
+async function captureSample() {
+  if(!modelsLoaded) { alert('Mô hình đang tải...'); return; }
+  if(!stream) {
+    const started = await startCamSilent();
+    if(!started) return;
+  }
+  const vid = document.getElementById('vid');
+  if(vid.readyState < 2) { setEnrStatus('Webcam chưa sẵn sàng...', 'amber'); return; }
+  const detOpts = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 });
+  const det = await faceapi.detectSingleFace(vid, detOpts).withFaceLandmarks(true).withFaceDescriptor();
+  if(!det) { setEnrStatus('Không phát hiện gương mặt. Thử lại.', 'red'); return; }
+  const tmp = document.createElement('canvas');
+  tmp.width = vid.videoWidth; tmp.height = vid.videoHeight;
+  tmp.getContext('2d').drawImage(vid, 0, 0);
+  const box = det.detection.box;
+  const pad = 20;
+  const fc = document.createElement('canvas');
+  fc.width = box.width + pad*2; fc.height = box.height + pad*2;
+  fc.getContext('2d').drawImage(tmp, box.x-pad, box.y-pad, fc.width, fc.height, 0, 0, fc.width, fc.height);
+  const dataUrl = fc.toDataURL('image/jpeg', 0.85);
+  enrollSamples.push({ descriptor: det.descriptor, dataUrl });
+  renderSamples();
+  setEnrStatus(`${enrollSamples.length} ảnh mẫu đã chụp`, 'green');
+}
+
+async function startCamSilent() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } });
+    const vid = document.getElementById('vid');
+    vid.srcObject = stream;
+    vid.style.display = 'none';
+    document.getElementById('ph').style.display = 'none';
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('stopBtn').disabled = false;
+    await new Promise(res => { vid.onloadedmetadata = () => { const c = document.getElementById('cvs'); c.width = vid.videoWidth; c.height = vid.videoHeight; res(); }; });
+    return true;
+  } catch(e) { alert('Không thể truy cập webcam.'); return false; }
+}
+
+function renderSamples() {
+  const row = document.getElementById('samplesRow');
+  row.innerHTML = enrollSamples.map((s,i) =>
+    `<div style="position:relative;display:inline-block">
+      <img src="${s.dataUrl}" class="cap-preview">
+      <button onclick="removeSample(${i})" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#A32D2D;border:none;cursor:pointer;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center">×</button>
+    </div>`
+  ).join('') + `<div class="cap-slot" onclick="captureSample()" title="Chụp thêm"><i class="ti ti-camera" aria-hidden="true" style="font-size:16px;display:block"></i>Thêm</div>`;
+}
+
+function removeSample(i) {
+  enrollSamples.splice(i, 1);
+  renderSamples();
+}
+
+async function enrollPerson() {
+  const name = document.getElementById('nameInput').value.trim();
+  if(!name) { setEnrStatus('Nhập tên trước!', 'amber'); return; }
+  if(enrollSamples.length < 1) { setEnrStatus('Chụp ít nhất 1 ảnh!', 'amber'); return; }
+  const role = document.getElementById('roleInput').value.trim();
+  const descriptors = enrollSamples.map(s => s.descriptor);
+  const avgDescriptor = averageDescriptors(descriptors);
+  const person = { id: Date.now(), name, role, avatar: enrollSamples[0].dataUrl, count: enrollSamples.length, descriptor: avgDescriptor };
+  persons.push(person);
+  rebuildMatcher();
+  renderPersonGrid();
+  clearEnroll();
+  setEnrStatus(`Đã thêm "${name}" thành công!`, 'green');
+  document.getElementById('personCount').textContent = persons.length;
+  document.getElementById('sDb').textContent = persons.length;
+}
+
+function averageDescriptors(descs) {
+  const len = descs[0].length;
+  const avg = new Float32Array(len);
+  descs.forEach(d => { for(let i=0;i<len;i++) avg[i] += d[i]; });
+  for(let i=0;i<len;i++) avg[i] /= descs.length;
+  return avg;
+}
+
+function rebuildMatcher() {
+  if(!persons.length) { matcher = null; return; }
+  const labeled = persons.map(p => new faceapi.LabeledFaceDescriptors(p.name, [p.descriptor]));
+  matcher = new faceapi.FaceMatcher(labeled, DIST_THRESHOLD);
+}
+
+function renderPersonGrid() {
+  const grid = document.getElementById('personGrid');
+  if(!persons.length) { grid.innerHTML = '<p style="font-size:13px;color:var(--color-text-secondary);margin-top:10px">Chưa có người nào. Thêm người mới ở trên.</p>'; return; }
+  grid.innerHTML = persons.map(p => {
+    const initials = p.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const avatarEl = p.avatar
+      ? `<img src="${p.avatar}" class="avatar" alt="${p.name}">`
+      : `<div class="av-ph">${initials}</div>`;
+    return `<div class="person-card">
+      <button class="del" onclick="deletePerson(${p.id})" aria-label="Xoá ${p.name}"><i class="ti ti-x" aria-hidden="true" style="font-size:10px"></i></button>
+      ${avatarEl}
+      <div class="name">${p.name}</div>
+      <div class="meta">${p.role || 'Chưa phân loại'}</div>
+      <div style="margin-top:4px"><span class="badge ${p.count>=3?'green':'amber'}">${p.count} ảnh mẫu</span></div>
+    </div>`;
+  }).join('');
+}
+
+function deletePerson(id) {
+  persons = persons.filter(p=>p.id!==id);
+  rebuildMatcher();
+  renderPersonGrid();
+  document.getElementById('personCount').textContent = persons.length;
+  document.getElementById('sDb').textContent = persons.length;
+}
+
+function clearEnroll() {
+  enrollSamples = [];
+  document.getElementById('nameInput').value = '';
+  document.getElementById('roleInput').value = '';
+  document.getElementById('samplesRow').innerHTML = `<div class="cap-slot" onclick="captureSample()" title="Chụp ảnh mẫu"><i class="ti ti-camera" aria-hidden="true" style="font-size:18px;display:block"></i>Chụp</div>`;
+}
+
+function clearAll() {
+  if(!persons.length) return;
+  if(!confirm('Xoá tất cả người dùng?')) return;
+  persons = []; matcher = null;
+  renderPersonGrid();
+  document.getElementById('personCount').textContent = 0;
+  document.getElementById('sDb').textContent = 0;
+}
+
+function setDot(id, cls) { const d = document.getElementById(id); d.className = 'dot' + (cls ? ' '+cls : ''); }
+function setEnrStatus(msg, dot) { setDot('enrDot', dot||''); document.getElementById('enrStatus').textContent = msg; }
+
+loadModels();
+</script>
